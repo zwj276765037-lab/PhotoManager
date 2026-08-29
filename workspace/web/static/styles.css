@@ -319,6 +319,15 @@ footer {
   font-size: 12px;
 }
 
+.field.is-disabled .segmented {
+  opacity: 0.4;
+}
+
+.field.is-disabled legend::after {
+  content: "（静态照片不适用）";
+  color: var(--blue);
+}
+
 select {
   width: 100%;
   min-height: 48px;
@@ -371,6 +380,17 @@ select {
 
 .segmented input:focus-visible + span {
   outline: 3px solid var(--acid);
+}
+
+.photo-mode-note {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(108, 166, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(108, 166, 255, 0.08);
+  color: #b9d2ff;
+  font-size: 11px;
+  line-height: 1.65;
 }
 
 .actions {

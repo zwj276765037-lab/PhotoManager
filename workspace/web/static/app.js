@@ -8,7 +8,11 @@ const clearFileButton = document.querySelector("#clear-file");
 const livePhotoHelp = document.querySelector("#live-photo-help");
 const chooseVideoAgainButton = document.querySelector("#choose-video-again");
 const submitButton = document.querySelector("#submit-button");
+const submitLabel = document.querySelector("#submit-label");
 const sampleButton = document.querySelector("#sample-button");
+const outputField = document.querySelector("#output-field");
+const qualityField = document.querySelector("#quality-field");
+const photoModeNote = document.querySelector("#photo-mode-note");
 const samplePreview = document.querySelector("#sample-preview");
 const videoPreview = document.querySelector("#video-preview");
 const imagePreview = document.querySelector("#image-preview");
@@ -28,9 +32,14 @@ const accessUrl = document.querySelector("#access-url");
 const copyUrlButton = document.querySelector("#copy-url");
 
 let selectedFile = null;
+let selectedSourceType = null;
 let objectUrl = null;
 let pollTimer = null;
 let activeJobId = null;
+let selectionToken = 0;
+
+const MAX_PHOTO_EDGE = 4096;
+const JPEG_QUALITY = 0.95;
 
 const variantNames = {
   "motion-cover": "先锋动态封面",
@@ -53,6 +62,59 @@ function revokeObjectUrl() {
   }
 }
 
+function updateSourceMode() {
+  const isPhoto = selectedSourceType === "photo";
+  submitLabel.textContent = isPhoto ? "生成静态杂志封面" : "开始生成";
+  photoModeNote.hidden = !isPhoto;
+  outputField.classList.toggle("is-disabled", isPhoto);
+  qualityField.classList.toggle("is-disabled", isPhoto);
+}
+
+function canvasToJpeg(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error("浏览器没有生成可上传的 JPEG"));
+      }
+    }, "image/jpeg", JPEG_QUALITY);
+  });
+}
+
+async function preparePhotoFile(image, sourceFile) {
+  const sourceWidth = image.naturalWidth;
+  const sourceHeight = image.naturalHeight;
+  if (!sourceWidth || !sourceHeight) {
+    throw new Error("浏览器没有读到照片尺寸");
+  }
+
+  const scale = Math.min(1, MAX_PHOTO_EDGE / Math.max(sourceWidth, sourceHeight));
+  const width = Math.max(1, Math.round(sourceWidth * scale));
+  const height = Math.max(1, Math.round(sourceHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { alpha: false });
+  if (!context) throw new Error("浏览器无法建立照片处理画布");
+
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+  const jpegBlob = await canvasToJpeg(canvas);
+  canvas.width = 1;
+  canvas.height = 1;
+
+  const baseName = sourceFile.name.replace(/\.[^.]+$/, "") || "photo";
+  const file = new File([jpegBlob], `${baseName}.jpg`, {
+    type: "image/jpeg",
+    lastModified: sourceFile.lastModified || Date.now(),
+  });
+  return { file, width, height };
+}
+
 function resetPreview() {
   revokeObjectUrl();
   videoPreview.pause();
@@ -72,20 +134,25 @@ function resetPreview() {
 }
 
 function clearSelectedFile() {
+  selectionToken += 1;
   selectedFile = null;
+  selectedSourceType = null;
   fileInput.value = "";
   fileSummary.hidden = true;
-  submitButton.disabled = true;
   livePhotoHelp.hidden = true;
   jobStatus.hidden = true;
+  updateSourceMode();
+  setBusy(false);
   resetPreview();
 }
 
-function showStaticImagePreview(file) {
+function showStaticImagePreview(file, token) {
   selectedFile = null;
-  submitButton.disabled = true;
+  selectedSourceType = "photo";
+  updateSourceMode();
+  setBusy(false);
   fileName.textContent = file.name;
-  fileMeta.textContent = `${file.type || "静态照片"} · ${formatBytes(file.size)} · 已本机预览`;
+  fileMeta.textContent = `${file.type || "静态照片"} · ${formatBytes(file.size)} · 正在准备`;
   fileSummary.hidden = false;
   livePhotoHelp.hidden = false;
 
@@ -98,13 +165,39 @@ function showStaticImagePreview(file) {
   imagePreview.classList.add("static-source");
   imagePreview.hidden = false;
   previewFallback.hidden = true;
-  imagePreview.onload = () => {
+  imagePreview.onload = async () => {
+    if (token !== selectionToken) return;
     imagePreview.hidden = false;
     previewFallback.hidden = true;
+    statusTitle.textContent = "正在准备高清照片";
+    statusDetail.textContent = "在手机本机转换为兼容的 JPEG，不会上传到其他服务器";
+    statusPercent.textContent = "处理中";
+    progressBar.style.width = "36%";
+    progressBar.style.background = "var(--blue)";
+    try {
+      const prepared = await preparePhotoFile(imagePreview, file);
+      if (token !== selectionToken) return;
+      selectedFile = prepared.file;
+      fileMeta.textContent = `${file.type || "静态照片"} · ${formatBytes(file.size)} · ${prepared.width} × ${prepared.height}`;
+      statusTitle.textContent = "照片已就绪";
+      statusDetail.textContent = "可以生成静态杂志封面 JPG；如需保留 Live Photo 动作，请先存储为视频";
+      statusPercent.textContent = "可生成";
+      progressBar.style.width = "100%";
+      progressBar.style.background = "var(--acid)";
+      setBusy(false);
+    } catch (error) {
+      if (token !== selectionToken) return;
+      selectedFile = null;
+      showFailure(`${error.message}，请先在照片 App 中导出为 JPG 或视频`);
+    }
   };
   imagePreview.onerror = () => {
+    if (token !== selectionToken) return;
+    selectedFile = null;
     imagePreview.hidden = true;
     previewFallback.hidden = false;
+    fileMeta.textContent = `${file.type || "静态照片"} · ${formatBytes(file.size)} · 无法解码`;
+    showFailure("当前浏览器不能读取这种照片格式，请先在照片 App 中导出为 JPG 或视频");
   };
   imagePreview.src = objectUrl;
 
@@ -112,34 +205,39 @@ function showStaticImagePreview(file) {
   stageIndex.textContent = "PHOTO / STATIC";
   stageTitle.textContent = file.name.replace(/\.[^.]+$/, "").slice(0, 24);
   jobStatus.hidden = false;
-  statusTitle.textContent = "照片预览已就绪";
-  statusDetail.textContent = "当前是静态文件；请将 Live Photo 存储为视频后再生成动态封面";
-  statusPercent.textContent = "需转视频";
+  statusTitle.textContent = "正在读取照片";
+  statusDetail.textContent = "预览成功后即可生成静态 JPG；动态封面仍需选择视频或 GIF";
+  statusPercent.textContent = "准备中";
   progressBar.style.width = "0";
   progressBar.style.background = "var(--blue)";
-  setBusy(false);
 }
 
 function setSelectedFile(file) {
   const allowed = [".gif", ".mp4", ".mov", ".m4v", ".webm"];
   const staticImages = [".heic", ".heif", ".jpg", ".jpeg", ".png", ".webp"];
   const lowerName = file.name.toLowerCase();
+  const token = ++selectionToken;
+  selectedFile = null;
+  selectedSourceType = null;
+  updateSourceMode();
+  submitButton.disabled = true;
   const isStaticImage = staticImages.some((extension) => lowerName.endsWith(extension))
     || (file.type.startsWith("image/") && file.type !== "image/gif");
+  if (file.size > 100 * 1024 * 1024) {
+    showFailure("文件超过 100 MB，请先裁短或压缩");
+    return;
+  }
   if (isStaticImage) {
-    showStaticImagePreview(file);
+    showStaticImagePreview(file, token);
     return;
   }
   if (!allowed.some((extension) => lowerName.endsWith(extension))) {
     showFailure("请选择 GIF、MP4、MOV、M4V 或 WebM 文件");
     return;
   }
-  if (file.size > 100 * 1024 * 1024) {
-    showFailure("文件超过 100 MB，请先裁短或压缩");
-    return;
-  }
-
   selectedFile = file;
+  selectedSourceType = lowerName.endsWith(".gif") || file.type === "image/gif" ? "gif" : "video";
+  updateSourceMode();
   livePhotoHelp.hidden = true;
   fileName.textContent = file.name;
   fileMeta.textContent = `${file.type || "未知媒体类型"} · ${formatBytes(file.size)}`;
@@ -150,7 +248,10 @@ function setSelectedFile(file) {
   objectUrl = URL.createObjectURL(file);
   samplePreview.pause();
   samplePreview.hidden = true;
-  const isGif = lowerName.endsWith(".gif") || file.type === "image/gif";
+  const isGif = selectedSourceType === "gif";
+  videoPreview.pause();
+  videoPreview.removeAttribute("src");
+  imagePreview.removeAttribute("src");
   videoPreview.hidden = isGif;
   imagePreview.hidden = !isGif;
   imagePreview.classList.remove("static-source");
@@ -166,13 +267,14 @@ function setSelectedFile(file) {
   previewState.textContent = "待生成";
   stageIndex.textContent = isGif ? "GIF / INPUT" : "VIDEO / INPUT";
   stageTitle.textContent = file.name.replace(/\.[^.]+$/, "").slice(0, 24);
+  setBusy(false);
 }
 
 function currentOptions() {
   return {
     variant: document.querySelector("#variant").value,
-    output_format: new FormData(form).get("output_format"),
-    quality: new FormData(form).get("quality"),
+    output_format: form.querySelector('input[name="output_format"]:checked')?.value || "mp4",
+    quality: form.querySelector('input[name="quality"]:checked')?.value || "high",
   };
 }
 
@@ -181,8 +283,11 @@ function setBusy(isBusy) {
   sampleButton.disabled = isBusy;
   fileInput.disabled = isBusy;
   document.querySelector("#variant").disabled = isBusy;
-  form.querySelectorAll('input[type="radio"]').forEach((input) => {
-    input.disabled = isBusy;
+  outputField.querySelectorAll('input[type="radio"]').forEach((input) => {
+    input.disabled = isBusy || selectedSourceType === "photo";
+  });
+  qualityField.querySelectorAll('input[type="radio"]').forEach((input) => {
+    input.disabled = isBusy || selectedSourceType === "photo";
   });
 }
 
@@ -338,8 +443,8 @@ async function submitUpload(event) {
   const options = currentOptions();
   payload.append("file", selectedFile, selectedFile.name);
   payload.append("variant", options.variant);
-  payload.append("output_format", options.output_format);
-  payload.append("quality", options.quality);
+  payload.append("output_format", selectedSourceType === "photo" ? "jpg" : options.output_format);
+  payload.append("quality", selectedSourceType === "photo" ? "high" : options.quality);
   try {
     setBusy(true);
     const job = await uploadRequest(payload);

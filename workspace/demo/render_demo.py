@@ -20,6 +20,7 @@ WIDTH = 1080
 HEIGHT = 1350
 DURATION = 6
 FPS = 30
+STATIC_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png"}
 SCALE_OPTIONS = (
     "flags=lanczos+accurate_rnd+full_chroma_int:"
     "out_color_matrix=bt709:out_range=tv"
@@ -322,6 +323,68 @@ def normalize_gif(ffmpeg: str, source: Path, output: Path) -> None:
     )
 
 
+def normalize_static_image(ffmpeg: str, source: Path, output: Path) -> None:
+    """Turn a still image into a lossless timeline for magazine composition."""
+    run(
+        [
+            ffmpeg,
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "warning",
+            "-filter_complex_threads",
+            "1",
+            "-loop",
+            "1",
+            "-i",
+            str(source),
+            "-vf",
+            (
+                "fps=30,scale=iw:ih:"
+                "flags=lanczos+accurate_rnd+full_chroma_int:"
+                "out_color_matrix=bt709:in_range=pc:out_range=tv,"
+                "setsar=1,format=yuv444p"
+            ),
+            "-map_metadata",
+            "-1",
+            "-fflags",
+            "+bitexact",
+            "-an",
+            "-t",
+            "4.10",
+            "-r",
+            "30",
+            "-c:v",
+            "ffv1",
+            "-level",
+            "3",
+            "-coder",
+            "1",
+            "-context",
+            "1",
+            "-g",
+            "1",
+            "-slicecrc",
+            "1",
+            "-threads",
+            "1",
+            "-flags:v",
+            "+bitexact",
+            "-pix_fmt",
+            "yuv444p",
+            "-color_primaries",
+            "bt709",
+            "-color_trc",
+            "bt709",
+            "-colorspace",
+            "bt709",
+            "-color_range",
+            "tv",
+            str(output),
+        ]
+    )
+
+
 def create_comparison(ffmpeg: str, covers: list[Path], output: Path) -> None:
     command = [ffmpeg, "-y", "-hide_banner", "-loglevel", "warning"]
     for cover in covers:
@@ -493,9 +556,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
     parser.add_argument(
         "--format",
-        choices=("mp4", "gif", "both"),
+        choices=("mp4", "gif", "both", "jpg"),
         default="mp4",
-        help="输出 MP4、GIF 或同时输出两种格式",
+        help="输出 MP4、GIF、JPG 静态封面或同时输出两种动态格式",
     )
     parser.add_argument(
         "--quality",
@@ -516,7 +579,7 @@ def main() -> None:
     args = parse_args()
     source = args.source.expanduser().resolve()
     if not source.is_file():
-        raise SystemExit(f"动态源不存在：{source}")
+        raise SystemExit(f"源素材不存在：{source}")
     for font in (args.font_bold, args.font_regular):
         if not font.is_file():
             raise SystemExit(f"字体不存在：{font}")
@@ -550,6 +613,9 @@ def main() -> None:
         if source.suffix.lower() == ".gif":
             prepared_source = Path(temp_dir) / "normalized-gif-input.mkv"
             normalize_gif(ffmpeg, source, prepared_source)
+        elif source.suffix.lower() in STATIC_IMAGE_SUFFIXES:
+            prepared_source = Path(temp_dir) / "normalized-static-input.mkv"
+            normalize_static_image(ffmpeg, source, prepared_source)
 
         covers: list[Path] = []
         for name, graph in selected:

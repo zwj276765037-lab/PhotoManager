@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="在本机把 GIF 或视频生成仍会动的杂志封面。"
+      content="在本机把照片、GIF 或视频生成杂志封面。"
     />
     <title>PhotoManager · 本地动态杂志工作台</title>
-    <link rel="stylesheet" href="/styles.css?v=2" />
-    <script src="/app.js?v=2" defer></script>
+    <link rel="stylesheet" href="/styles.css?v=3" />
+    <script src="/app.js?v=3" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -26,7 +26,7 @@
         <div class="intro-copy">
           <h1 id="page-title">把这一刻，<em>编成会动的封面。</em></h1>
           <p>
-            用手机或电脑上传一段视频或 GIF，选择版式和输出格式。网站会调用这台电脑的渲染器生成 MP4、GIF 与 JPG，不会把素材发送到云端。
+            用手机或电脑上传照片、视频或 GIF，选择杂志版式。照片生成静态 JPG，动态素材可生成 MP4、GIF 与 JPG；全部处理都在这台电脑完成。
           </p>
         </div>
       </section>
@@ -39,16 +39,16 @@
               id="source-file"
               name="file"
               type="file"
-              accept="image/*,video/mp4,video/quicktime,video/webm,.m4v,image/gif,.gif"
+              accept="image/*,.heic,.heif,video/mp4,video/quicktime,video/webm,.m4v,image/gif,.gif"
             />
             <span class="drop-icon" aria-hidden="true">＋</span>
-            <strong>选择 Live Photo、GIF 或视频</strong>
-            <span>Live Photo 会先检查浏览器是否保留动态 · 最大 100 MB</span>
+            <strong>选择照片、Live Photo、GIF 或视频</strong>
+            <span>照片可生成静态封面 · 动态素材生成动态封面 · 最大 100 MB</span>
           </label>
 
           <aside id="live-photo-help" class="live-photo-help" hidden>
-            <strong>照片已经可以预览，但当前文件是静态的</strong>
-            <p>网页无法取得 Live Photo 的配对 MOV。请在 iPhone“照片”中打开它，点右上角“…” →“存储为视频”，再回到这里选择新视频；真实动作会被保留。</p>
+            <strong>当前按静态照片处理，可生成 JPG 杂志封面</strong>
+            <p>如果它原本是 Live Photo，网页仍无法取得配对 MOV。要保留真实动作，请在 iPhone“照片”中打开它，点右上角“…” →“存储为视频”，再回来选择新视频。</p>
             <button id="choose-video-again" class="inline-action" type="button">重新选择转换后的视频</button>
           </aside>
 
@@ -73,7 +73,7 @@
             </select>
           </label>
 
-          <fieldset class="field">
+          <fieldset id="output-field" class="field">
             <legend>动态输出</legend>
             <div class="segmented">
               <label><input type="radio" name="output_format" value="mp4" checked /><span>MP4</span></label>
@@ -82,7 +82,7 @@
             </div>
           </fieldset>
 
-          <fieldset class="field">
+          <fieldset id="quality-field" class="field">
             <legend>视频清晰度</legend>
             <div class="segmented two">
               <label><input type="radio" name="quality" value="high" checked /><span>高清优先</span></label>
@@ -90,9 +90,13 @@
             </div>
           </fieldset>
 
+          <p id="photo-mode-note" class="photo-mode-note" hidden>
+            静态照片模式只输出高清 JPG；动态格式与视频清晰度会在选择视频或 GIF 后恢复。
+          </p>
+
           <div class="actions">
             <button id="submit-button" class="primary-button" type="submit" disabled>
-              开始生成
+              <span id="submit-label">开始生成</span>
               <span aria-hidden="true">↗</span>
             </button>
             <button id="sample-button" class="secondary-button" type="button">
@@ -132,7 +136,7 @@
               controls
             ></video>
             <video id="video-preview" muted loop playsinline controls hidden></video>
-            <img id="image-preview" alt="已选择的动态图片预览" hidden />
+            <img id="image-preview" alt="已选择的照片或动态图片预览" hidden />
             <div id="preview-fallback" class="preview-fallback" hidden>
               <strong>照片已选择</strong>
               <span>当前浏览器不能直接显示这种照片格式，但文件信息已读取。</span>
@@ -160,7 +164,7 @@
             <p class="kicker">RENDERED ON THIS DEVICE</p>
             <h2 id="result-title">生成结果</h2>
           </div>
-          <p>MP4 适合清晰发布；GIF 适合动图兼容；JPG 是静态封面。</p>
+          <p>照片生成 JPG；视频与 GIF 可生成 MP4、GIF，并始终附带 JPG 封面。</p>
         </div>
         <div id="result-grid" class="result-grid"></div>
       </section>
@@ -178,7 +182,7 @@
 
     <footer>
       <span>PhotoManager / Motion Magazine Prototype</span>
-      <span>GIF + VIDEO → MP4 + GIF + JPG</span>
+      <span>PHOTO + GIF + VIDEO → JPG + MP4 + GIF</span>
     </footer>
   </body>
 </html>

@@ -37,9 +37,18 @@ FONT_REGULAR = Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc")
 
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 MAX_REQUEST_BYTES = MAX_UPLOAD_BYTES + 1024 * 1024
-SUPPORTED_EXTENSIONS = {".gif", ".mp4", ".mov", ".m4v", ".webm"}
+SUPPORTED_EXTENSIONS = {
+    ".gif",
+    ".mp4",
+    ".mov",
+    ".m4v",
+    ".webm",
+    ".jpg",
+    ".jpeg",
+    ".png",
+}
 VARIANTS = {"all", "motion-cover", "break-frame", "time-slices"}
-OUTPUT_FORMATS = {"mp4", "gif", "both"}
+OUTPUT_FORMATS = {"mp4", "gif", "both", "jpg"}
 QUALITIES = {"high", "standard"}
 JOB_ID_PATTERN = re.compile(r"^[a-f0-9]{32}$")
 
@@ -179,7 +188,7 @@ def validate_source(filename: str, payload: bytes) -> tuple[str, str]:
     if suffix not in SUPPORTED_EXTENSIONS:
         raise ApiError(
             HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-            "当前只支持 GIF、MP4、MOV、M4V 和 WebM",
+            "当前只支持 GIF、MP4、MOV、M4V、WebM、JPG 和 PNG",
         )
     if not payload:
         raise ApiError(HTTPStatus.BAD_REQUEST, "上传文件为空")
@@ -187,7 +196,16 @@ def validate_source(filename: str, payload: bytes) -> tuple[str, str]:
         raise ApiError(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "文件不能超过 100 MB")
     if suffix == ".gif" and not payload.startswith((b"GIF87a", b"GIF89a")):
         raise ApiError(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, "文件不是有效的 GIF")
-    source_type = "gif" if suffix == ".gif" else "video"
+    if suffix in {".jpg", ".jpeg"} and not payload.startswith(b"\xff\xd8\xff"):
+        raise ApiError(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, "文件不是有效的 JPEG")
+    if suffix == ".png" and not payload.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise ApiError(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, "文件不是有效的 PNG")
+    if suffix == ".gif":
+        source_type = "gif"
+    elif suffix in {".jpg", ".jpeg", ".png"}:
+        source_type = "photo"
+    else:
+        source_type = "video"
     return suffix, source_type
 
 
@@ -224,7 +242,7 @@ def parse_multipart(
             fields[field_name] = payload.decode("utf-8", errors="replace").strip()
 
     if not filename:
-        raise ApiError(HTTPStatus.BAD_REQUEST, "请选择一个 GIF 或视频文件")
+        raise ApiError(HTTPStatus.BAD_REQUEST, "请选择一个照片、GIF 或视频文件")
     return fields, filename, file_payload
 
 
@@ -266,20 +284,23 @@ def create_job(
     return public_job(job)
 
 
-def expected_steps(variant: str, output_format: str) -> int:
+def expected_steps(variant: str, output_format: str, source_type: str) -> int:
     variant_count = 3 if variant == "all" else 1
     exports = 2
     if output_format in {"mp4", "both"}:
         exports += 1
     if output_format in {"gif", "both"}:
         exports += 1
-    return variant_count * exports + (1 if variant == "all" else 0)
+    normalization = 1 if source_type in {"gif", "photo"} else 0
+    return normalization + variant_count * exports + (1 if variant == "all" else 0)
 
 
-def output_label(filename: str) -> str:
+def output_label(filename: str, source_type: str) -> str:
     stem = Path(filename).stem
     variant_names = {
-        "01_motion_cover": "先锋动态封面",
+        "01_motion_cover": (
+            "先锋静态封面" if source_type == "photo" else "先锋动态封面"
+        ),
         "02_break_frame": "斜切破版",
         "03_time_slices": "三时态切片",
         "comparison": "三版封面对比",
@@ -287,7 +308,9 @@ def output_label(filename: str) -> str:
     return variant_names.get(stem, stem.replace("_", " "))
 
 
-def collect_outputs(job_id: str, output_dir: Path) -> list[dict[str, Any]]:
+def collect_outputs(
+    job_id: str, output_dir: Path, source_type: str
+) -> list[dict[str, Any]]:
     files = sorted(
         path
         for path in output_dir.iterdir()
@@ -301,7 +324,7 @@ def collect_outputs(job_id: str, output_dir: Path) -> list[dict[str, Any]]:
         media_url = f"/media/{job_id}/{quote(path.name)}"
         item: dict[str, Any] = {
             "name": path.name,
-            "label": output_label(path.name),
+            "label": output_label(path.name, source_type),
             "type": media_type,
             "bytes": path.stat().st_size,
             "url": media_url,
@@ -329,7 +352,9 @@ def run_render_job(job_id: str) -> None:
     output_dir = job_dir(job_id) / "outputs"
     output_dir.mkdir(parents=True, exist_ok=True)
     log_path = job_dir(job_id) / "render.log"
-    total_steps = expected_steps(job["variant"], job["output_format"])
+    total_steps = expected_steps(
+        job["variant"], job["output_format"], job["source_type"]
+    )
     completed_steps = 0
     update_job(job_id, status="running", phase="检查素材并准备无损母版", progress=2)
 
@@ -381,7 +406,7 @@ def run_render_job(job_id: str) -> None:
         if return_code != 0:
             raise RuntimeError(last_log_message(log_path))
 
-        outputs = collect_outputs(job_id, output_dir)
+        outputs = collect_outputs(job_id, output_dir, job["source_type"])
         if not outputs:
             raise RuntimeError("渲染完成但没有找到输出文件")
         update_job(
@@ -521,6 +546,9 @@ class PhotoManagerHandler(BaseHTTPRequestHandler):
         )
         variant, output_format, quality = validate_options(fields)
         suffix, source_type = validate_source(filename, payload)
+        if source_type == "photo":
+            output_format = "jpg"
+            quality = "high"
         job = create_job(
             payload,
             filename,
