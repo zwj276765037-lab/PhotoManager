@@ -371,7 +371,11 @@ function saveInstruction(output) {
 
 function renderResults(outputs) {
   resultGrid.replaceChildren();
-  outputs.forEach((output) => {
+  const outputPriority = { video: 0, gif: 1, cover: 2 };
+  const orderedOutputs = [...outputs].sort(
+    (left, right) => (outputPriority[left.type] ?? 9) - (outputPriority[right.type] ?? 9),
+  );
+  orderedOutputs.forEach((output) => {
     const card = document.createElement("article");
     card.className = "result-card";
     card.append(makeMedia(output));
