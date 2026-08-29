@@ -1,77 +1,60 @@
-# PhotoManager（本地 AI 动态人生杂志）
+# PhotoManager（原生 iOS Live Photo 动态杂志）
 
-手机可通过局域网访问的本地动态杂志封面生成项目。
+PhotoManager 的当前主线是原生 iOS App：直接选择系统相册中的 Live Photo，自动读取同一 `PHAsset` 的静态照片与 `.pairedVideo`，逐帧加入杂志设计后，再保存为一张新的原生 Live Photo。
 
-当前阶段：先用“电脑本地网站＋手机同一 Wi-Fi 访问”验证产品。普通照片可直接生成静态杂志 JPG；GIF/视频可生成动态封面；Live Photo 先在照片 App 中“存储为视频”才能保留真实动作。动态结果可选择 GIF、MP4 或两者，并附 JPG 封面。`goal/README.md` 为 v0.9 待审核稿；`workspace/web/` 已提供真实上传、异步渲染、移动端操作、动态/静态标记、iPhone 保存指引和结果预览。iOS App 原生成对读取保留为后续预案。
+用户不再需要手动“存储为视频”。视频仍是 Live Photo 的底层配对资源，但由 App 在后台自动处理。
+
+## 当前阶段
+
+第一里程碑先验证最底层闭环：
+
+```text
+选择原生 Live Photo
+        ↓
+PhotoKit 读取照片 + pairedVideo
+        ↓
+PHLivePhotoView 原生预览
+        ↓
+PHAssetCreationRequest 原生写回副本
+        ↓
+系统“照片”中保留 Live 标记和按压播放
+```
+
+`workspace/ios/` 已建立 SwiftUI、PHPicker、PhotoKit 成对读取、iCloud 原件进度、原生预览和原生写回代码骨架。当前运行环境是 Linux，不能调用 Xcode/iOS SDK；下一项外部验收是在 Mac 上生成工程并连接真实 iPhone。
+
+原本的本地网站保留在 `workspace/web/`，只作为杂志版式、FFmpeg 动态样片和 MP4/GIF/JPG 兼容输出工具，不再是首发产品。
 
 ## 目录约定
 
 ```text
 PhotoManager/
-├── goal/       # 项目需求、功能范围、验收标准、上线说明
-├── mission/    # 每一次优化的时间、内容、验证结果和提交记录
-└── workspace/  # 本地网站、视觉样片、后续 App/小程序和测试代码
+├── goal/               # 当前 iOS 产品需求、验收标准和上线说明
+├── mission/            # 每次优化、验证结果和 Git 交付记录
+└── workspace/
+    ├── ios/            # 当前主线：原生 Live Photo iOS App
+    ├── demo/           # 三种动态杂志视觉与 FFmpeg 样片
+    ├── web/            # 辅助工具：本地网站与非 Live Photo 输出验证
+    └── miniprogram/    # 后续预案，不承担原生 Live Photo 读取
 ```
 
-三个目录的职责不能混用：
+## 交付规则
 
-- `goal/` 回答“要做什么、做到什么程度”。
-- `mission/` 回答“何时做了什么、是否验证通过”。
-- `workspace/` 存放“实际运行的代码”。
+每轮成果均按以下顺序完成：
 
-## 最底层工作方式
+1. 在 `goal/` 更新需求与验收标准。
+2. 在 `workspace/` 实现对应代码。
+3. 完成与风险相匹配的静态检查、Xcode 构建或真机测试。
+4. 在 `mission/` 记录时间、功能、验证和未解决问题。
+5. 提交并推送到 [`origin/main`](https://github.com/zwj276765037-lab/PhotoManager)。
 
-用户在电脑启动本地网站，手机连接同一可信 Wi-Fi 后打开局域网地址。网站负责上传、任务状态、素材预览、输出格式和结果保存；电脑负责杂志版式、运动编排和 MP4/GIF/JPG 渲染。第一版采用以下数据流：
-
-```text
-选择普通照片，或把 Live Photo 在 iPhone 照片 App 中“存储为视频”
-        ↓
-手机网站选择照片、转换后的视频、普通视频或 GIF
-        ↓
-局域网上传到电脑任务目录并完成输入检查
-        ↓
-照片进入静态版式；视频推荐高光；短 GIF 默认保留完整动作
-        ↓
-AI 生成主体分层、杂志版式和短文案
-        ↓
-按用户选择生成一个结构，或同时生成 3 个结构性差异候选
-        ↓
-用户调整焦点与标题；动态素材还可调整片段、速度和动态强度
-        ↓
-照片生成 JPG；动态素材选择高清 MP4、GIF 或两者，并生成 JPG 封面
-        ↓
-保存到相册后发布朋友圈或其他社交平台
-```
-
-底层数据分为三部分：
-
-1. 本地任务文件：照片、普通视频/GIF、代理视频、主体蒙版和预览，保存在 Git 忽略的运行目录。
-2. 动态海报计划：高光片段、落版帧、循环方式、主体轨迹、版式、文字、字体和颜色，可用于恢复任务和确定性重渲染。
-3. 输出文件：电脑从同一高清母版生成首尾闭环 MP4、GIF 动态图片和 JPG 封面；手机或电脑浏览器下载，是否自动重播由发布平台决定。
-
-MVP 采用原生 HTML/CSS/JavaScript、Python 本地服务、异步任务和 FFmpeg 确定性渲染，不依赖云端账号或存储。iOS App 和微信小程序均为后续预案；高级分割不可用时仍需降级为受规则约束的动态封面，不能退化为视频矩形加边框。
-
-## 每次成果的交付规则
-
-每一轮修改都按以下顺序完成：
-
-1. 在 `goal/` 确认或更新需求与验收标准。
-2. 只在 `workspace/` 修改项目实现。
-3. 完成与变更风险相匹配的检查或测试。
-4. 在 `mission/` 追加日期、优化内容、验证结果和未解决问题。
-5. 提交 Git，并推送到 `origin/main`：<https://github.com/zwj276765037-lab/PhotoManager>。
-
-这里的“覆盖到 GitHub”定义为：GitHub 的 `main` 分支是最终成果基线，每次成果都提交并正常推送。默认不使用强制推送，以免误删远端历史；只有明确要求重写历史且确认备份后才会执行。
+不会用强制推送覆盖远端历史。Xcode 构建、签名和真机结果必须如实区分，不能把 Linux 静态检查描述为 iOS 编译成功。
 
 ## 文档入口
 
-- [项目需求与验收标准](goal/README.md)
-- [本地网站启动说明](workspace/web/README.md)
-- [后续 iOS App 上线预案](goal/IOS_RELEASE.md)
-- [后续微信小程序上线指南](goal/WECHAT_RELEASE.md)
-- [已归档的 v0.4 三页静态人生杂志需求](goal/archive/AI_LIFE_MAGAZINE_V0.4.md)
-- [已归档的 v0.3 AI 朋友圈拼图需求](goal/archive/AI_MOMENTS_COLLAGE_V0.3.md)
-- [已归档的照片分类需求](goal/archive/PHOTO_CLASSIFICATION_V0.2.md)
+- [iOS App 需求与验收标准](goal/README.md)
+- [iOS 工程与真机验证说明](workspace/ios/README.md)
+- [iOS App 上线指南](goal/IOS_RELEASE.md)
+- [本地网站 v0.9 归档摘要](goal/archive/LOCAL_WEB_MVP_V0.9.md)
 - [优化记录](mission/README.md)
 - [代码工作区说明](workspace/README.md)
-- [首轮动态杂志视觉样片](workspace/demo/README.md)
+- [动态杂志视觉样片](workspace/demo/README.md)

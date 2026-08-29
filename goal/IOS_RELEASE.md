@@ -1,8 +1,8 @@
 # iOS App 上线指南
 
-> 当前定位：后续预案。项目先用手机可访问的本地网站验证上传、动态杂志渲染、输出与分享效果；验证通过后再启动本方案。
+> 当前定位：首发主线。项目已切换为原生 iOS App；必须先通过原生 Live Photo 成对读取与写回真机闭环，再进入 TestFlight 和 App Store 流程。
 
-本预案目标是：真实 iPhone 可从系统照片资料库选择原生 Live Photo，完成动态杂志封面生成，并通过 App Store 安装正式版本。
+本指南目标是：真实 iPhone 可从系统照片资料库直接选择原生 Live Photo，不经用户手动转视频，完成动态杂志封面生成、写回新的 Live Photo，并通过 App Store 安装正式版本。
 
 ## 一、上线前准备
 
@@ -22,7 +22,7 @@ Apple 计划费用、可用能力和审核政策会调整，提交时以 Apple �
 - `Info.plist` 必须按实际能力配置 `NSPhotoLibraryUsageDescription` 和 `NSPhotoLibraryAddUsageDescription`；文案明确解释读取 Live Photo 是为了取得静态照片和配对视频并生成动态封面。
 - 优先使用系统照片选择器和有限照片权限，只读取用户明确选择的资产；拒绝权限后仍能查看示例和已下载作品。
 - PhotoKit 读取同一 `PHAsset` 的静态照片资源和 `.pairedVideo`，iCloud 资源显示真实下载进度并允许取消。
-- 保存 MP4/GIF/JPG 时只请求必要的写入能力。用户撤销权限后，App 不崩溃、不循环弹窗，并提供系统设置入口。
+- 写回新 Live Photo 时使用 `.photo + .pairedVideo`，并只请求必要的新增权限；可选 MP4/GIF/JPG 兼容副本不得代替原生 Live Photo 主结果。用户撤销权限后，App 不崩溃、不循环弹窗，并提供系统设置入口。
 - 生产、预发布和开发环境分离；生产接口只允许 HTTPS，证书校验、用户隔离、短期签名下载和服务端鉴权必须启用。
 - 崩溃日志、分析统计和第三方 SDK 必须进入隐私清单与 App Store 隐私问卷，未使用的数据不得勾选或采集。
 
@@ -33,7 +33,7 @@ Apple 计划费用、可用能力和审核政策会调整，提交时以 Apple �
 - 不同受支持 iPhone 型号、本地 Live Photo、仅在 iCloud 的 Live Photo、横竖屏和不同原始编码。
 - 完整照片＋配对 MOV、资源缺失/损坏、iCloud 断网、下载取消、本机空间不足和低电量模式。
 - 完整照片权限、有限照片权限、拒绝权限、授权后撤销权限、只允许新增照片。
-- Live Photo→MP4/GIF/JPG、视频→MP4/GIF/JPG、GIF→MP4/GIF/JPG。
+- Live Photo 原生输入→新 Live Photo 原生写回，并重新读取验证 `.photo + .pairedVideo`；同时覆盖可选 Live Photo→MP4/GIF/JPG 兼容副本。
 - App 前后台切换、进程被系统终止、上传中断、重复点击、任务恢复和旧结果不覆盖新编辑。
 - 导出前后分辨率、帧率、码率、色彩、方向、首尾帧、GIF 多帧和文件大小。
 - 从系统相册重新打开导出文件，并用测试微信账号实际发布到测试朋友圈后回看平台压缩和裁切。

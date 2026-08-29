@@ -2,6 +2,23 @@
 
 本文件按时间倒序记录每一次可交付成果。每次修改代码或需求后都必须追加记录，并与 Git 提交对应。
 
+## 2026-08-29 14:17 CST — 主线切换为原生 iOS Live Photo App
+
+- 类型：平台切换 / iOS 工程初始化 / PhotoKit / 原生 Live Photo 闭环 / 需求重写
+- 优化内容：
+  - 根据用户确认，将首发主线从本地网站正式切换为 Swift/SwiftUI 原生 iOS App；网站保留为 FFmpeg 杂志版式和 MP4/GIF/JPG 辅助验证工具，并归档 v0.9 网站范围。
+  - 将需求重写为 v1.0：核心路径固定为“系统选择原生 Live Photo → 同一 `PHAsset` 读取静态照片＋`.pairedVideo` → 原生预览 → 新 Live Photo 写回”，用户不再手动“存储为视频”。
+  - 新增 20 条 P0 真机闭环验收和 10 条 P1 杂志合成验收；明确 content identifier、still-image-time、逐帧视频渲染、静态照片原图渲染和写回后重新读取校验。
+  - 新建 `workspace/ios/project.yml` XcodeGen 工程定义，目标为 iOS 17，配置照片读取与新增用途说明、自动签名占位 Bundle ID 和资源目录。
+  - 新建 SwiftUI 手机工作台、Live Photo 专用 `PHPickerViewController`、`PHLivePhotoView` 原生播放、权限/进度/错误状态和两个 P0 主操作。
+  - 新建 PhotoKit 导入服务：验证 `.photoLive`，优先选择 `.fullSizePhoto + .fullSizePairedVideo`，降级到 `.photo + .pairedVideo`，允许 iCloud 原件联网读取并写入随机沙盒任务目录。
+  - 新建原生写回服务：用 `PHAssetCreationRequest` 添加 `.photo + .pairedVideo`，不移动或修改原件；保存完成后重新获取新 `PHAsset`，验证 Live subtype 和完整资源对，再显示成功。
+  - 界面显示照片/配对视频原始文件名、UTType 和字节数；当前写回的是未修改画面的副本，用于先验证原生往返，杂志逐帧合成排在该闭环真机通过之后。
+  - 更新根说明、工作区说明和 App Store 上线指南；停止上一阶段的局域网网站服务，避免把辅助工具继续当作首发产品。
+- 验证：`project.yml` 通过 YAML 解析并确认 iOS 17 Target；3 个 Asset Catalog JSON 全部可解析；10 个 Swift 源文件完成必需文件、UTF-8、字符串/注释、括号配对和关键 PhotoKit API 存在性检查；Markdown 本地链接与 Git 差异检查通过；确认旧网站端口已经停止。当前 Linux 环境没有 Swift 编译器、Xcode、iOS SDK、签名和真实 PhotoKit，因此没有宣称 Xcode 构建或真机闭环通过。
+- 未解决：必须在 Mac 安装 Xcode/XcodeGen，选择真实开发 Team 和唯一 Bundle ID 后连接真实 iPhone；需要根据首轮编译修正任何 Apple SDK API 或并发警告，并用本地/iCloud Live Photo 验证成对读取和写回。P1 杂志逐帧渲染、content identifier 与 still-image-time 重建尚未实现。
+- Git 提交：以本次原生 iOS App 主线切换提交为准。
+
 ## 2026-08-29 13:46 CST — 区分动静态结果并修复 iPhone 保存入口
 
 - 类型：移动端交互修复 / iPhone 保存 / 动静态状态 / 文档

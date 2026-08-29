@@ -7,12 +7,14 @@
 ```text
 workspace/
 ├── demo/              # 当前可直接播放的三版动态杂志视觉样片
-├── web/               # 当前首发：手机可通过局域网访问的本地网站
+├── ios/               # 当前首发：原生 Live Photo 读取、编辑与写回
+│   ├── project.yml    # XcodeGen 工程定义
+│   └── PhotoManager/  # SwiftUI、PhotoKit、服务与资源
+├── web/               # 辅助工具：手机局域网网站与 MP4/GIF/JPG 验证
 │   ├── static/        # 移动端优先的上传、选项、状态、预览与下载页面
 │   ├── server.py      # 本地 HTTP、上传隔离、任务队列、Range 与结果接口
 │   ├── start.sh       # 创建隔离环境并监听本机/局域网地址
 │   └── runtime/       # 本地素材、日志和结果，已由 Git 忽略
-├── ios/               # 后续预案：原生 PhotoKit Live Photo 读取
 ├── miniprogram/       # 后续作品管理/预览/分享入口，不负责 Live Photo 采集
 ├── backend/           # 异步队列、动态分析、AI 调度、内容安全与数据清理
 ├── renderer/          # FFmpeg 动态海报预览、MP4/GIF、封面与 AI 标识处理
@@ -22,10 +24,13 @@ workspace/
 
 ## 实现原则
 
-- 当前首发为本地网站：电脑运行 Python 服务和 FFmpeg，手机通过同一可信 Wi-Fi 使用 Safari 上传、查看进度、预览和保存。
+- 当前首发为原生 iOS App：使用 SwiftUI、PHPicker、PhotoKit 和 AVFoundation，用户直接选择原生 Live Photo，不手动“存储为视频”。
+- P0 必须读取同一 `PHAsset` 的静态照片和 `.pairedVideo`，通过 `PHLivePhotoView` 预览，并以 `.photo + .pairedVideo` 写回新的系统 Live Photo。
+- 原生写回副本通过真实 iPhone 验收后，才接入静态照片和全部视频帧的杂志合成、content identifier 与 still-image-time 元数据生成。
+- `web/` 降为辅助工具：电脑运行 Python/FFmpeg，手机可验证版式和 MP4/GIF/JPG，但网站结果不代表原生 Live Photo 能力。
 - 每个上传任务使用随机标识和独立的 Git 忽略目录；原文件名只作为展示信息，不能决定磁盘路径。
 - 本地渲染使用单工作线程异步队列，页面刷新、手机锁屏或 Safari 进入后台时不终止电脑上的任务。
-- 浏览器无法获得 PhotoKit 的 Live Photo 成对资源；当前稳定路径是先在 iPhone 照片 App“存储为视频”。若 Safari 只返回静态图，页面允许生成静态 JPG 并提示动态保留步骤，不能伪称动态导入成功。
+- 浏览器无法获得 PhotoKit 成对资源，不能再作为主产品输入方案；网站只保留真实能力提示，不能伪称原生 Live Photo 导入成功。
 - 本地服务为手机访问监听局域网地址，但没有账号和访问密码；只允许在可信网络临时启动，不得暴露公网。
 - 上传、输入审核、规范化、高光分析、主体跟踪、版式规划、预览、高清渲染和输出审核均有独立状态与重试策略。
 - MP4、GIF 与 JPG 共享 `designVersion`、高光片段、落版帧、字体和渲染版本，旧异步结果不得覆盖新编辑。
@@ -46,7 +51,15 @@ workspace/
 
 打开 `demo/index.html` 可以并排循环比较。第二版尚未加入逐帧人物蒙版，因此只验证斜切动态区和图文层级，不代表完整主体破版。
 
-`web/` 已将同一渲染器接成可操作的本地网站：
+`ios/` 已建立当前 P0 代码骨架：
+
+- Live Photo 专用系统选择器和 PhotoKit 读写授权。
+- `.fullSizePhoto/.photo` 与 `.fullSizePairedVideo/.pairedVideo` 成对分类。
+- iCloud 原件下载进度、随机任务目录和非零资源信息。
+- `PHLivePhotoView` 原生预览。
+- `PHAssetCreationRequest` 原生写回副本，不修改原件。
+
+`web/` 保留为辅助工具：
 
 - 手机与电脑浏览器上传照片、GIF 或视频；照片可生成静态 JPG 杂志封面。
 - 三种结构、MP4/GIF/两者和两档清晰度选择。
@@ -55,4 +68,4 @@ workspace/
 
 ## 下一步
 
-先让用户用真实 iPhone 访问 `web/`，完成“Live Photo 存储为视频 → 手机上传 → 选择结构与格式 → 等待电脑渲染 → 手机预览和保存”。确认局域网、Safari 下载和视觉效果后，再加入标题、日期、颜色、焦点与时间片段编辑。原生 PhotoKit Live Photo 读取保留为网站验证后的 iOS App 预案。
+在 Mac 安装 XcodeGen，用 `workspace/ios/project.yml` 生成 Xcode 工程，选择开发 Team 和唯一 Bundle ID，并连接真实 iPhone 完成“原生选择 → 成对读取 → 原生预览 → 写回副本 → 相册重新读取”闭环。通过后实现逐帧杂志渲染和新的 Live Photo 元数据，而不是继续扩展网站桥接流程。
