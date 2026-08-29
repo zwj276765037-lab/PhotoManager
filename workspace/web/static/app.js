@@ -64,7 +64,7 @@ function revokeObjectUrl() {
 
 function updateSourceMode() {
   const isPhoto = selectedSourceType === "photo";
-  submitLabel.textContent = isPhoto ? "生成静态杂志封面" : "开始生成";
+  submitLabel.textContent = isPhoto ? "只生成静态 JPG" : "开始生成动态封面";
   photoModeNote.hidden = !isPhoto;
   outputField.classList.toggle("is-disabled", isPhoto);
   qualityField.classList.toggle("is-disabled", isPhoto);
@@ -180,8 +180,8 @@ function showStaticImagePreview(file, token) {
       selectedFile = prepared.file;
       fileMeta.textContent = `${file.type || "静态照片"} · ${formatBytes(file.size)} · ${prepared.width} × ${prepared.height}`;
       statusTitle.textContent = "照片已就绪";
-      statusDetail.textContent = "可以生成静态杂志封面 JPG；如需保留 Live Photo 动作，请先存储为视频";
-      statusPercent.textContent = "可生成";
+      statusDetail.textContent = "当前文件没有动作，只能生成静态 JPG；要生成动图，请先把 Live Photo 存储为视频";
+      statusPercent.textContent = "仅静态";
       progressBar.style.width = "100%";
       progressBar.style.background = "var(--acid)";
       setBusy(false);
@@ -264,9 +264,17 @@ function setSelectedFile(file) {
     videoPreview.src = objectUrl;
     videoPreview.play().catch(() => {});
   }
-  previewState.textContent = "待生成";
+  previewState.textContent = "动态待生成";
   stageIndex.textContent = isGif ? "GIF / INPUT" : "VIDEO / INPUT";
   stageTitle.textContent = file.name.replace(/\.[^.]+$/, "").slice(0, 24);
+  jobStatus.hidden = false;
+  statusTitle.textContent = isGif ? "GIF 动态图片已就绪" : "视频已就绪";
+  statusDetail.textContent = isGif
+    ? "已识别为会动的 GIF，可生成动态 GIF 或 MP4"
+    : "已识别为视频，可生成真正会动的 MP4 或 GIF";
+  statusPercent.textContent = "动态输入";
+  progressBar.style.width = "100%";
+  progressBar.style.background = "var(--acid)";
   setBusy(false);
 }
 
@@ -343,6 +351,24 @@ function makeMedia(output) {
   return image;
 }
 
+function outputKind(output) {
+  return {
+    video: "会动 · MP4 视频",
+    gif: "会动 · GIF 动态图片",
+    cover: "静态 · JPG 封面",
+  }[output.type] || output.type;
+}
+
+function saveInstruction(output) {
+  if (output.type === "video") {
+    return "iPhone：打开视频后点 Safari 分享按钮，再选“存储视频”。";
+  }
+  if (output.type === "gif") {
+    return "iPhone：打开动图后长按或点分享，再选“存储图像”；回到“照片”确认仍会动。";
+  }
+  return "iPhone：打开图片后长按，再选“存储到照片”。";
+}
+
 function renderResults(outputs) {
   resultGrid.replaceChildren();
   outputs.forEach((output) => {
@@ -355,12 +381,32 @@ function renderResults(outputs) {
     const title = document.createElement("h3");
     title.textContent = output.label;
     const meta = document.createElement("p");
-    meta.textContent = `${output.name.split(".").pop().toUpperCase()} · ${formatBytes(output.bytes)}`;
+    meta.className = "output-kind";
+    meta.textContent = `${outputKind(output)} · ${formatBytes(output.bytes)}`;
+
+    const actions = document.createElement("div");
+    actions.className = "result-actions";
+    const open = document.createElement("a");
+    open.className = "open-output-button";
+    open.href = output.url;
+    open.target = "_blank";
+    open.rel = "noopener";
+    open.textContent = output.type === "video"
+      ? "打开视频并保存"
+      : output.type === "gif"
+        ? "打开动图并保存"
+        : "打开图片并保存";
     const download = document.createElement("a");
-    download.className = "download-button";
+    download.className = "file-download-button";
     download.href = output.download_url;
-    download.textContent = "保存到本机";
-    copy.append(title, meta, download);
+    download.download = output.name;
+    download.textContent = "下载到“文件”";
+    actions.append(open, download);
+
+    const instruction = document.createElement("p");
+    instruction.className = "save-instruction";
+    instruction.textContent = saveInstruction(output);
+    copy.append(title, meta, actions, instruction);
     card.append(copy);
     resultGrid.append(card);
   });

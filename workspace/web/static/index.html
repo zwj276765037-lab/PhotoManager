@@ -8,8 +8,8 @@
       content="在本机把照片、GIF 或视频生成杂志封面。"
     />
     <title>PhotoManager · 本地动态杂志工作台</title>
-    <link rel="stylesheet" href="/styles.css?v=3" />
-    <script src="/app.js?v=3" defer></script>
+    <link rel="stylesheet" href="/styles.css?v=4" />
+    <script src="/app.js?v=4" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -47,8 +47,8 @@
           </label>
 
           <aside id="live-photo-help" class="live-photo-help" hidden>
-            <strong>当前按静态照片处理，可生成 JPG 杂志封面</strong>
-            <p>如果它原本是 Live Photo，网页仍无法取得配对 MOV。要保留真实动作，请在 iPhone“照片”中打开它，点右上角“…” →“存储为视频”，再回来选择新视频。</p>
+            <strong>当前收到的只是静态照片，所以生成结果不会动</strong>
+            <p>如果它原本是 Live Photo，请在 iPhone“照片”中打开它，点右上角“…” →“存储为视频”，再回来选择新视频。只有页面显示“视频已就绪”或“GIF 动态图片已就绪”时，输出才会动。</p>
             <button id="choose-video-again" class="inline-action" type="button">重新选择转换后的视频</button>
           </aside>
 
@@ -91,7 +91,7 @@
           </fieldset>
 
           <p id="photo-mode-note" class="photo-mode-note" hidden>
-            静态照片模式只输出高清 JPG；动态格式与视频清晰度会在选择视频或 GIF 后恢复。
+            当前文件不含动作，只能输出高清 JPG。想生成会动的结果，请选择“存储为视频”后的 Live Photo 视频或原始 GIF。
           </p>
 
           <div class="actions">
@@ -164,7 +164,7 @@
             <p class="kicker">RENDERED ON THIS DEVICE</p>
             <h2 id="result-title">生成结果</h2>
           </div>
-          <p>照片生成 JPG；视频与 GIF 可生成 MP4、GIF，并始终附带 JPG 封面。</p>
+          <p>“会动”标签才是动态结果。iPhone 需先打开结果，再通过长按或 Safari 分享菜单存储到“照片”。</p>
         </div>
         <div id="result-grid" class="result-grid"></div>
       </section>

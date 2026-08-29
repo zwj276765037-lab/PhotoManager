@@ -402,7 +402,8 @@ select {
 
 .primary-button,
 .secondary-button,
-.download-button {
+.open-output-button,
+.file-download-button {
   min-height: 52px;
   border: 0;
   border-radius: 10px;
@@ -429,7 +430,8 @@ select {
 
 .primary-button:hover:not(:disabled),
 .secondary-button:hover,
-.download-button:hover {
+.open-output-button:hover,
+.file-download-button:hover {
   transform: translateY(-2px);
 }
 
@@ -690,14 +692,43 @@ select {
   font-size: 12px;
 }
 
-.download-button {
+.result-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: 8px;
+}
+
+.open-output-button,
+.file-download-button {
   display: grid;
   min-height: 44px;
   place-items: center;
+  font-size: 12px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.open-output-button {
   background: var(--paper);
   color: var(--ink);
-  font-size: 12px;
-  text-decoration: none;
+}
+
+.file-download-button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--paper);
+}
+
+.result-copy .output-kind {
+  color: var(--acid);
+  font-weight: 700;
+}
+
+.result-copy .save-instruction {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
 }
 
 .history {
@@ -824,7 +855,8 @@ footer {
   }
 
   .actions,
-  .result-grid {
+  .result-grid,
+  .result-actions {
     grid-template-columns: 1fr;
   }
 
