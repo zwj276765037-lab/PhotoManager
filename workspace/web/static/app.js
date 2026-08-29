@@ -6,11 +6,13 @@ const fileName = document.querySelector("#file-name");
 const fileMeta = document.querySelector("#file-meta");
 const clearFileButton = document.querySelector("#clear-file");
 const livePhotoHelp = document.querySelector("#live-photo-help");
+const chooseVideoAgainButton = document.querySelector("#choose-video-again");
 const submitButton = document.querySelector("#submit-button");
 const sampleButton = document.querySelector("#sample-button");
 const samplePreview = document.querySelector("#sample-preview");
 const videoPreview = document.querySelector("#video-preview");
 const imagePreview = document.querySelector("#image-preview");
+const previewFallback = document.querySelector("#preview-fallback");
 const previewState = document.querySelector("#preview-state");
 const stageIndex = document.querySelector("#stage-index");
 const stageTitle = document.querySelector("#stage-title");
@@ -55,9 +57,13 @@ function resetPreview() {
   revokeObjectUrl();
   videoPreview.pause();
   videoPreview.removeAttribute("src");
+  imagePreview.onload = null;
+  imagePreview.onerror = null;
   imagePreview.removeAttribute("src");
+  imagePreview.classList.remove("static-source");
   videoPreview.hidden = true;
   imagePreview.hidden = true;
+  previewFallback.hidden = true;
   samplePreview.hidden = false;
   samplePreview.play().catch(() => {});
   previewState.textContent = "示例";
@@ -71,19 +77,57 @@ function clearSelectedFile() {
   fileSummary.hidden = true;
   submitButton.disabled = true;
   livePhotoHelp.hidden = true;
+  jobStatus.hidden = true;
   resetPreview();
+}
+
+function showStaticImagePreview(file) {
+  selectedFile = null;
+  submitButton.disabled = true;
+  fileName.textContent = file.name;
+  fileMeta.textContent = `${file.type || "静态照片"} · ${formatBytes(file.size)} · 已本机预览`;
+  fileSummary.hidden = false;
+  livePhotoHelp.hidden = false;
+
+  revokeObjectUrl();
+  objectUrl = URL.createObjectURL(file);
+  samplePreview.pause();
+  samplePreview.hidden = true;
+  videoPreview.pause();
+  videoPreview.hidden = true;
+  imagePreview.classList.add("static-source");
+  imagePreview.hidden = false;
+  previewFallback.hidden = true;
+  imagePreview.onload = () => {
+    imagePreview.hidden = false;
+    previewFallback.hidden = true;
+  };
+  imagePreview.onerror = () => {
+    imagePreview.hidden = true;
+    previewFallback.hidden = false;
+  };
+  imagePreview.src = objectUrl;
+
+  previewState.textContent = "静态预览";
+  stageIndex.textContent = "PHOTO / STATIC";
+  stageTitle.textContent = file.name.replace(/\.[^.]+$/, "").slice(0, 24);
+  jobStatus.hidden = false;
+  statusTitle.textContent = "照片预览已就绪";
+  statusDetail.textContent = "当前是静态文件；请将 Live Photo 存储为视频后再生成动态封面";
+  statusPercent.textContent = "需转视频";
+  progressBar.style.width = "0";
+  progressBar.style.background = "var(--blue)";
+  setBusy(false);
 }
 
 function setSelectedFile(file) {
   const allowed = [".gif", ".mp4", ".mov", ".m4v", ".webm"];
   const staticImages = [".heic", ".heif", ".jpg", ".jpeg", ".png", ".webp"];
   const lowerName = file.name.toLowerCase();
-  if (staticImages.some((extension) => lowerName.endsWith(extension))) {
-    selectedFile = null;
-    submitButton.disabled = true;
-    fileSummary.hidden = true;
-    livePhotoHelp.hidden = false;
-    showFailure("当前浏览器只提供了静态照片，请先在 iPhone 照片 App 中将 Live Photo 存储为视频");
+  const isStaticImage = staticImages.some((extension) => lowerName.endsWith(extension))
+    || (file.type.startsWith("image/") && file.type !== "image/gif");
+  if (isStaticImage) {
+    showStaticImagePreview(file);
     return;
   }
   if (!allowed.some((extension) => lowerName.endsWith(extension))) {
@@ -109,6 +153,10 @@ function setSelectedFile(file) {
   const isGif = lowerName.endsWith(".gif") || file.type === "image/gif";
   videoPreview.hidden = isGif;
   imagePreview.hidden = !isGif;
+  imagePreview.classList.remove("static-source");
+  imagePreview.onload = null;
+  imagePreview.onerror = null;
+  previewFallback.hidden = true;
   if (isGif) {
     imagePreview.src = objectUrl;
   } else {
@@ -417,6 +465,7 @@ dropZone.addEventListener("drop", (event) => {
 });
 
 clearFileButton.addEventListener("click", clearSelectedFile);
+chooseVideoAgainButton.addEventListener("click", () => fileInput.click());
 form.addEventListener("submit", submitUpload);
 sampleButton.addEventListener("click", submitSample);
 window.addEventListener("beforeunload", revokeObjectUrl);

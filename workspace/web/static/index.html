@@ -8,8 +8,8 @@
       content="在本机把 GIF 或视频生成仍会动的杂志封面。"
     />
     <title>PhotoManager · 本地动态杂志工作台</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <script src="/app.js" defer></script>
+    <link rel="stylesheet" href="/styles.css?v=2" />
+    <script src="/app.js?v=2" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -47,8 +47,9 @@
           </label>
 
           <aside id="live-photo-help" class="live-photo-help" hidden>
-            <strong>Safari 只交出了静态照片</strong>
+            <strong>照片已经可以预览，但当前文件是静态的</strong>
             <p>网页无法取得 Live Photo 的配对 MOV。请在 iPhone“照片”中打开它，点右上角“…” →“存储为视频”，再回到这里选择新视频；真实动作会被保留。</p>
+            <button id="choose-video-again" class="inline-action" type="button">重新选择转换后的视频</button>
           </aside>
 
           <div id="file-summary" class="file-summary" hidden>
@@ -132,6 +133,10 @@
             ></video>
             <video id="video-preview" muted loop playsinline controls hidden></video>
             <img id="image-preview" alt="已选择的动态图片预览" hidden />
+            <div id="preview-fallback" class="preview-fallback" hidden>
+              <strong>照片已选择</strong>
+              <span>当前浏览器不能直接显示这种照片格式，但文件信息已读取。</span>
+            </div>
             <div class="stage-caption">
               <span id="stage-index">COVER / 001</span>
               <strong id="stage-title">夜色上篮</strong>
