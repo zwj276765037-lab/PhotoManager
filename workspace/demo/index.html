@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PhotoManager 动态杂志样片</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, "Noto Sans CJK SC", system-ui, sans-serif;
+        background: #0b0d12;
+        color: #f2eee5;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 12% 0%, #213654 0, transparent 34rem),
+          #0b0d12;
+      }
+
+      main {
+        width: min(1440px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 56px 0 80px;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 32px;
+        align-items: end;
+        margin-bottom: 36px;
+      }
+
+      h1,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 850px;
+        font-size: clamp(38px, 6vw, 86px);
+        line-height: 0.95;
+        letter-spacing: -0.05em;
+      }
+
+      .eyebrow,
+      .meta,
+      .tag {
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .eyebrow {
+        margin-bottom: 16px;
+        color: #d6ff3f;
+        font-size: 13px;
+      }
+
+      .meta {
+        max-width: 360px;
+        color: #aeb4c0;
+        font-size: 12px;
+        line-height: 1.8;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px;
+      }
+
+      article {
+        overflow: hidden;
+        border: 1px solid #ffffff1f;
+        border-radius: 20px;
+        background: #11151d;
+        box-shadow: 0 24px 70px #0007;
+      }
+
+      video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 5;
+        background: #06080c;
+        object-fit: cover;
+      }
+
+      .copy {
+        min-height: 156px;
+        padding: 20px;
+      }
+
+      .tag {
+        margin-bottom: 10px;
+        color: #ff6b45;
+        font-size: 11px;
+      }
+
+      h2 {
+        margin: 0 0 8px;
+        font-size: 24px;
+      }
+
+      .description {
+        color: #aeb4c0;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .notice {
+        margin-top: 26px;
+        padding: 18px 20px;
+        border-left: 4px solid #d6ff3f;
+        background: #ffffff0a;
+        color: #c9ced7;
+        line-height: 1.65;
+      }
+
+      .demo-section {
+        margin-top: 72px;
+        padding-top: 34px;
+        border-top: 1px solid #ffffff1f;
+      }
+
+      .section-title {
+        max-width: 820px;
+        margin: 0 0 14px;
+        font-size: clamp(32px, 5vw, 62px);
+        line-height: 1.05;
+      }
+
+      .section-intro {
+        max-width: 860px;
+        margin-bottom: 28px;
+        color: #aeb4c0;
+        line-height: 1.7;
+      }
+
+      .comparison-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+
+      .comparison-grid.two {
+        grid-template-columns: repeat(2, minmax(0, 520px));
+      }
+
+      .image-preview {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 5;
+        background: #06080c;
+        object-fit: contain;
+      }
+
+      .pixel-comparison {
+        display: block;
+        width: min(100%, 1240px);
+        margin-top: 22px;
+        border: 1px solid #ffffff1f;
+        border-radius: 16px;
+      }
+
+      @media (max-width: 900px) {
+        header {
+          grid-template-columns: 1fr;
+        }
+
+        .grid,
+        .comparison-grid,
+        .comparison-grid.two {
+          grid-template-columns: 1fr;
+        }
+
+        article {
+          max-width: 520px;
+          margin: 0 auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">PhotoManager · Motion Magazine Study 001</p>
+          <h1>同一个瞬间，三种动态杂志语言。</h1>
+        </div>
+        <p class="meta">
+          1080 × 1350 · 6 SEC · H.264 · MUTED<br />
+          请重点比较空间结构、时间节奏和“是否仍像普通视频模板”。
+        </p>
+      </header>
+
+      <section class="grid">
+        <article>
+          <video
+            src="./outputs/01_motion_cover.mp4"
+            poster="./outputs/01_motion_cover.jpg"
+            muted
+            autoplay
+            loop
+            playsinline
+            controls
+          ></video>
+          <div class="copy">
+            <p class="tag">01 · Motion Cover</p>
+            <h2>先锋动态封面</h2>
+            <p class="description">全出血运动画面与强刊头，验证它能否像一本真正会动的体育特刊。</p>
+          </div>
+        </article>
+
+        <article>
+          <video
+            src="./outputs/02_break_frame.mp4"
+            poster="./outputs/02_break_frame.jpg"
+            muted
+            autoplay
+            loop
+            playsinline
+            controls
+          ></video>
+          <div class="copy">
+            <p class="tag">02 · Break Frame Baseline</p>
+            <h2>斜切破版基线</h2>
+            <p class="description">纸张留白、倾斜动态切面与跨层标题；尚未加入真正的人物分割蒙版。</p>
+          </div>
+        </article>
+
+        <article>
+          <video
+            src="./outputs/03_time_slices.mp4"
+            poster="./outputs/03_time_slices.jpg"
+            muted
+            autoplay
+            loop
+            playsinline
+            controls
+          ></video>
+          <div class="copy">
+            <p class="tag">03 · Time Slices</p>
+            <h2>三时态切片</h2>
+            <p class="description">把启动、突破与出手放进同一版面，验证“时间本身就是杂志构图”。</p>
+          </div>
+        </article>
+      </section>
+
+      <p class="notice">
+        本页的循环由浏览器播放器提供，仅用于检查首尾衔接。朋友圈是否自动播放、重播、压缩或改用其他封面，由微信客户端决定，仍需真机发布验证。
+      </p>
+
+      <section class="demo-section">
+        <p class="eyebrow">Quality Check · Source-Limited</p>
+        <h2 class="section-title">你看到的像素变软确实存在，高清编码只能减少二次损失。</h2>
+        <p class="section-intro">
+          原片只有 720 × 1280、约 645 kbps，并带有夜景运动模糊；生成 1080 × 1350 版面仍需放大 1.5 倍。新版将默认编码从 CRF 19 提高到 CRF 14，使用一次 Lanczos 规范化和轻度锐化，并由无损 4:4:4 版式母版分别导出各格式，但不会把不存在的细节伪装成真实高清。
+        </p>
+
+        <div class="comparison-grid two">
+          <article>
+            <video
+              src="./quality-comparison/01_motion_cover_standard_crf19.mp4"
+              poster="./quality-comparison/01_motion_cover_standard_crf19.jpg"
+              muted
+              loop
+              playsinline
+              controls
+            ></video>
+            <div class="copy">
+              <p class="tag">Standard · CRF 19</p>
+              <h2>原标准档</h2>
+              <p class="description">约 2.3 MiB；更省空间，但夜景运动边缘更容易变软。</p>
+            </div>
+          </article>
+
+          <article>
+            <video
+              src="./outputs/01_motion_cover.mp4"
+              poster="./outputs/01_motion_cover.jpg"
+              muted
+              loop
+              playsinline
+              controls
+            ></video>
+            <div class="copy">
+              <p class="tag">High · CRF 14</p>
+              <h2>新版高清档</h2>
+              <p class="description">约 4.3 MiB；减少编码块和插值模糊，仍受原片清晰度上限约束。</p>
+            </div>
+          </article>
+        </div>
+
+        <img
+          class="pixel-comparison"
+          src="./quality-comparison/pixel_comparison.jpg"
+          alt="CRF 19 与 CRF 14 无损母版导出在篮筐和人物区域的像素对比"
+        />
+      </section>
+
+      <section class="demo-section">
+        <p class="eyebrow">GIF + Video · Input / Output Matrix</p>
+        <h2 class="section-title">动态图片或视频都能输入，动图或视频都能输出。</h2>
+        <p class="section-intro">
+          下面实际覆盖四条路径：视频→MP4、视频→GIF、GIF→MP4、GIF→GIF。GIF 使用原文件多帧解码；所有格式从同一无损 4:4:4 版式母版分别编码。输出 GIF 为 720 × 900、15 fps、最多 256 色，兼容性较直观但清晰度、渐变和体积都不如 MP4。
+        </p>
+
+        <div class="comparison-grid">
+          <article>
+            <img
+              class="image-preview"
+              src="./inputs/basketball_motion_test.gif"
+              alt="49 帧篮球动作 GIF 输入"
+            />
+            <div class="copy">
+              <p class="tag">Input · Original GIF</p>
+              <h2>动态图片输入</h2>
+              <p class="description">360 × 640 · 49 帧 · 4.08 秒；直接解帧，不经过 Canvas。</p>
+            </div>
+          </article>
+
+          <article>
+            <img
+              class="image-preview"
+              src="./outputs-gif/03_time_slices.gif"
+              alt="由 GIF 输入生成的时间切片 GIF"
+            />
+            <div class="copy">
+              <p class="tag">GIF → GIF</p>
+              <h2>动态图片输出</h2>
+              <p class="description">720 × 900 · 90 帧 · 约 6.6 MiB；适合验证动图交付。</p>
+            </div>
+          </article>
+
+          <article>
+            <video
+              src="./outputs-gif/03_time_slices.mp4"
+              poster="./outputs-gif/03_time_slices.jpg"
+              muted
+              loop
+              playsinline
+              controls
+            ></video>
+            <div class="copy">
+              <p class="tag">GIF → MP4</p>
+              <h2>视频输出</h2>
+              <p class="description">1080 × 1350 · 6 秒 · 约 4.3 MiB；文字、渐变和运动更稳定。</p>
+            </div>
+          </article>
+
+          <article>
+            <img
+              class="image-preview"
+              src="./outputs-image/01_motion_cover.gif"
+              alt="由视频输入生成的动态封面 GIF"
+            />
+            <div class="copy">
+              <p class="tag">Video → GIF</p>
+              <h2>视频转动态图片</h2>
+              <p class="description">720 × 900 · 90 帧 · 约 13.6 MiB；证明视频也能选择动图输出。</p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
