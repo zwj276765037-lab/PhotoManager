@@ -49,7 +49,7 @@ def find_ffmpeg(explicit: str | None) -> str:
 
 
 def run(command: list[str]) -> None:
-    print(f"生成：{Path(command[-1]).name}")
+    print(f"生成：{Path(command[-1]).name}", flush=True)
     subprocess.run(command, check=True)
 
 
@@ -571,7 +571,7 @@ def main() -> None:
 
     if len(covers) == 3:
         create_comparison(ffmpeg, covers, output_dir / "comparison.jpg")
-    print(f"完成。输出目录：{output_dir}")
+    print(f"完成。输出目录：{output_dir}", flush=True)
 
 
 if __name__ == "__main__":

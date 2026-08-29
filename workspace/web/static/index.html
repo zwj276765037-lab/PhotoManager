@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="在本机把 GIF 或视频生成仍会动的杂志封面。"
+    />
+    <title>PhotoManager · 本地动态杂志工作台</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="PhotoManager 首页">
+        <span class="brand-mark">PM</span>
+        <span>PhotoManager</span>
+      </a>
+      <div class="local-badge"><span></span>仅在本机运行</div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <p class="kicker">MOTION MAGAZINE STUDIO / LOCAL 001</p>
+        <div class="intro-copy">
+          <h1 id="page-title">把这一刻，<em>编成会动的封面。</em></h1>
+          <p>
+            用手机或电脑上传一段视频或 GIF，选择版式和输出格式。网站会调用这台电脑的渲染器生成 MP4、GIF 与 JPG，不会把素材发送到云端。
+          </p>
+        </div>
+      </section>
+
+      <section class="studio" aria-label="动态杂志生成工作台">
+        <form id="render-form" class="control-panel">
+          <div class="section-number">01 / 素材</div>
+          <label id="drop-zone" class="drop-zone" for="source-file" tabindex="0">
+            <input
+              id="source-file"
+              name="file"
+              type="file"
+              accept="image/*,video/mp4,video/quicktime,video/webm,.m4v,image/gif,.gif"
+            />
+            <span class="drop-icon" aria-hidden="true">＋</span>
+            <strong>选择 Live Photo、GIF 或视频</strong>
+            <span>Live Photo 会先检查浏览器是否保留动态 · 最大 100 MB</span>
+          </label>
+
+          <aside id="live-photo-help" class="live-photo-help" hidden>
+            <strong>Safari 只交出了静态照片</strong>
+            <p>网页无法取得 Live Photo 的配对 MOV。请在 iPhone“照片”中打开它，点右上角“…” →“存储为视频”，再回到这里选择新视频；真实动作会被保留。</p>
+          </aside>
+
+          <div id="file-summary" class="file-summary" hidden>
+            <div>
+              <strong id="file-name"></strong>
+              <span id="file-meta"></span>
+            </div>
+            <button id="clear-file" class="text-button" type="button">移除</button>
+          </div>
+
+          <div class="control-divider"></div>
+          <div class="section-number">02 / 编排</div>
+
+          <label class="field">
+            <span>杂志结构</span>
+            <select id="variant" name="variant">
+              <option value="motion-cover">先锋动态封面</option>
+              <option value="break-frame">斜切破版</option>
+              <option value="time-slices">三时态切片</option>
+              <option value="all">同时生成三版</option>
+            </select>
+          </label>
+
+          <fieldset class="field">
+            <legend>动态输出</legend>
+            <div class="segmented">
+              <label><input type="radio" name="output_format" value="mp4" checked /><span>MP4</span></label>
+              <label><input type="radio" name="output_format" value="gif" /><span>GIF</span></label>
+              <label><input type="radio" name="output_format" value="both" /><span>两者</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="field">
+            <legend>视频清晰度</legend>
+            <div class="segmented two">
+              <label><input type="radio" name="quality" value="high" checked /><span>高清优先</span></label>
+              <label><input type="radio" name="quality" value="standard" /><span>节省空间</span></label>
+            </div>
+          </fieldset>
+
+          <div class="actions">
+            <button id="submit-button" class="primary-button" type="submit" disabled>
+              开始生成
+              <span aria-hidden="true">↗</span>
+            </button>
+            <button id="sample-button" class="secondary-button" type="button">
+              用示例视频测试
+            </button>
+          </div>
+          <p class="local-note">本地原型不会修改原文件；生成结果保存在本机运行目录。</p>
+
+          <div class="phone-access">
+            <div>
+              <span>手机访问地址</span>
+              <strong id="access-url">正在读取…</strong>
+            </div>
+            <button id="copy-url" class="text-button" type="button">复制</button>
+          </div>
+          <p class="network-note">手机与电脑需连接同一可信 Wi‑Fi；使用结束后在电脑终端按 Ctrl+C 关闭。</p>
+        </form>
+
+        <section class="preview-panel" aria-labelledby="preview-title">
+          <div class="preview-heading">
+            <div>
+              <p class="section-number">03 / 预览</p>
+              <h2 id="preview-title">当前动态源</h2>
+            </div>
+            <span id="preview-state" class="preview-state">示例</span>
+          </div>
+
+          <div class="media-stage">
+            <video
+              id="sample-preview"
+              src="/demo/outputs/01_motion_cover.mp4"
+              poster="/demo/outputs/01_motion_cover.jpg"
+              muted
+              autoplay
+              loop
+              playsinline
+              controls
+            ></video>
+            <video id="video-preview" muted loop playsinline controls hidden></video>
+            <img id="image-preview" alt="已选择的动态图片预览" hidden />
+            <div class="stage-caption">
+              <span id="stage-index">COVER / 001</span>
+              <strong id="stage-title">夜色上篮</strong>
+            </div>
+          </div>
+
+          <div id="job-status" class="job-status" aria-live="polite" hidden>
+            <div class="status-copy">
+              <strong id="status-title">正在准备</strong>
+              <span id="status-detail">等待本地渲染器</span>
+            </div>
+            <span id="status-percent">0%</span>
+            <div class="progress-track"><span id="progress-bar"></span></div>
+          </div>
+        </section>
+      </section>
+
+      <section id="result-section" class="results" aria-labelledby="result-title" hidden>
+        <div class="results-heading">
+          <div>
+            <p class="kicker">RENDERED ON THIS DEVICE</p>
+            <h2 id="result-title">生成结果</h2>
+          </div>
+          <p>MP4 适合清晰发布；GIF 适合动图兼容；JPG 是静态封面。</p>
+        </div>
+        <div id="result-grid" class="result-grid"></div>
+      </section>
+
+      <section class="history" aria-labelledby="history-title">
+        <div>
+          <p class="section-number">LOCAL HISTORY</p>
+          <h2 id="history-title">最近任务</h2>
+        </div>
+        <div id="history-list" class="history-list">
+          <p class="empty-history">还没有本地任务。上传素材或使用示例开始。</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>PhotoManager / Motion Magazine Prototype</span>
+      <span>GIF + VIDEO → MP4 + GIF + JPG</span>
+    </footer>
+  </body>
+</html>
